@@ -67,6 +67,7 @@ class AppEnvPage extends StatelessWidget {
                   AppEnvTextFormWidget(
                     formTitle: "Okunan Fal Sayısı",
                     formHint: "",
+                    enabled: false,
                     controller: textEditingController5!,
                   ),
                   ElevatedButtonWidget(

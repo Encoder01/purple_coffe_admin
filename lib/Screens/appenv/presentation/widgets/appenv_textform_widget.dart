@@ -5,11 +5,13 @@ class AppEnvTextFormWidget extends StatelessWidget {
   AppEnvTextFormWidget(
       {required this.formTitle,
       required this.formHint,
+      this.enabled=true,
       required this.controller});
 
   String formTitle;
   String formHint;
   TextEditingController controller;
+  bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +32,7 @@ class AppEnvTextFormWidget extends StatelessWidget {
           ),
           TextFormField(
             controller: controller,
+            enabled: enabled,
             cursorColor: Themes.mainColor,
             style: TextStyle(color: Themes.mainColor),
             keyboardType: TextInputType.number,
@@ -42,7 +45,10 @@ class AppEnvTextFormWidget extends StatelessWidget {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide(color: Themes.mainColor, width: 2.5),
-              ),
+              ),disabledBorder:OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide(color: Themes.mainColor, width: 2.5),
+            ) ,
                 hintStyle: TextStyle(color: Colors.white),),
           )
         ],

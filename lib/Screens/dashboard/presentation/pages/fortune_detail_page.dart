@@ -4,6 +4,8 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:untitled/Screens/appenv/data/data_sources/appenv_firestore_datasource.dart';
+import 'package:untitled/Screens/appenv/data/data_sources/appenv_firestore_datasource_imp.dart';
 import 'package:untitled/Screens/dashboard/domain/entities/fortune_tells.dart';
 import 'package:untitled/Screens/dashboard/presentation/pages/fortune_tells_page.dart';
 import 'package:untitled/Screens/dashboard/presentation/widgets/elevated_button.dart';
@@ -11,6 +13,10 @@ import 'package:untitled/config/themes/themes.dart';
 import 'package:http/http.dart' as http;
 import 'package:untitled/main.dart';
 
+import '../../../../injection_container.dart';
+import '../../../appenv/data/models/app_env_model.dart';
+import '../../../appenv/domain/entities/app_env.dart';
+import '../../../appenv/presentation/manager/appenv_bloc.dart';
 import '../manager/fortune_bloc.dart';
 import '../widgets/textform_widget.dart';
 
@@ -26,6 +32,7 @@ class FortuneDetail extends StatefulWidget {
 }
 
 class _FortuneDetailState extends State<FortuneDetail> {
+  final firestoreRepository = serviceLocator<AppEnvFireStoreDataSource>();
   void showImage(BuildContext context, image) async {
     await showDialog(
       context: context,
@@ -55,10 +62,9 @@ class _FortuneDetailState extends State<FortuneDetail> {
             : widget.fortuneTells.fortuneComment!.toString());
     soruController = TextEditingController(
         text: widget.fortuneTells.fortune_quest!["answer"].toString() == "null"
-            ? "Cevap Yaz"
+            ? "null"
             : widget.fortuneTells.fortune_quest!["answer"]);
-    bildirimController =
-        TextEditingController(text: widget.fortuneTells.notifContent ?? "");
+    bildirimController = TextEditingController(text: widget.fortuneTells.notifContent ?? "");
   }
 
   @override
@@ -71,10 +77,7 @@ class _FortuneDetailState extends State<FortuneDetail> {
         elevation: 0,
         title: Text(
           "Kahve Falı Yorumla",
-          style: TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
-              color: Themes.mainColor),
+          style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold, color: Themes.mainColor),
         ),
       ),
       body: SingleChildScrollView(
@@ -83,8 +86,7 @@ class _FortuneDetailState extends State<FortuneDetail> {
           child: Column(
             children: [
               HeaderFortune(context),
-              ContentFortune(
-                  context, falController, soruController, bildirimController),
+              ContentFortune(context, falController, soruController, bildirimController),
               ElevatedButtonWidget(
                 text: "Fal'ı Gönder",
                 onPress: () async {
@@ -99,11 +101,10 @@ class _FortuneDetailState extends State<FortuneDetail> {
                         userEmail: widget.fortuneTells.userEmail,
                         notifContent: bildirimController?.text.toString(),
                         fortune_quest: {
-                          "answer": widget.fortuneTells.fortune_quest!["answer"]
-                                      .toString() ==
-                                  "null"
-                              ? soruController!.text
-                              : widget.fortuneTells.fortune_quest!["answer"],
+                          "answer":
+                              widget.fortuneTells.fortune_quest!["answer"].toString() == "null"
+                                  ? soruController!.text
+                                  : widget.fortuneTells.fortune_quest!["answer"],
                           "quest": widget.fortuneTells.fortune_quest!["quest"]
                         },
                         createDate: widget.fortuneTells.createDate!,
@@ -112,27 +113,35 @@ class _FortuneDetailState extends State<FortuneDetail> {
                       ),
                     ),
                   );
+                 if(soruController!.text=='null'){
+                   final appEnvParams = await firestoreRepository.getAppEnv();
+                   BlocProvider.of<AppEnvBloc>(context).add(
+                     SetAppEnvEvent(
+                       AppEnv(
+                         busyFortuneTime: appEnvParams.busyFortuneTime,
+                         dailyFortune: appEnvParams.dailyFortune,
+                         fortuneTime: appEnvParams.fortuneTime,
+                         helpChar: appEnvParams.helpChar,
+                         readedDailyFortune: appEnvParams.readedDailyFortune!+1,
+                       ),
+                     ),
+                   );
+                 }
                   final response = await http.post(
                     Uri.parse('https://onesignal.com/api/v1/notifications'),
                     headers: <String, String>{
                       'Content-Type': 'application/json; charset=UTF-8',
-                      "Authorization":
-                          "Basic YTBhZjY3NDctYmNjMS00ZDU0LTlmNDctYTc1MzVkMGQzZmFh"
+                      "Authorization": "Basic YTBhZjY3NDctYmNjMS00ZDU0LTlmNDctYTc1MzVkMGQzZmFh"
                     },
                     body: jsonEncode(<String, dynamic>{
                       "app_id": "11dd0b75-1cce-40f0-a4b4-c08a08fb4a42",
                       "filters": [
-                        {
-                          "field": "email",
-                          "value": widget.fortuneTells.userEmail
-                        }
+                        {"field": "email", "value": widget.fortuneTells.userEmail}
                       ],
                       "sound": "sent_fortune.ogg",
                       "priority": 10,
                       "channel_for_external_user_ids": "email",
-                      "contents":
-                        {"en": bildirimController?.text.toString()}
-                      ,
+                      "contents": {"en": bildirimController?.text.toString()},
                       "android_group_message": [
                         {"en": bildirimController?.text.toString()}
                       ]
@@ -169,8 +178,7 @@ class _FortuneDetailState extends State<FortuneDetail> {
       children: [
         Text(
           "Fincan İçi ",
-          style:
-              TextStyle(color: Themes.mainColor, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Themes.mainColor, fontWeight: FontWeight.bold),
         ),
         const SizedBox(
           height: 5,
@@ -185,9 +193,8 @@ class _FortuneDetailState extends State<FortuneDetail> {
               crossAxisSpacing: 10,
             ),
             scrollDirection: Axis.horizontal,
-            itemCount: widget.fortuneTells.inCup!.length == 0
-                ? 1
-                : widget.fortuneTells.inCup!.length,
+            itemCount:
+                widget.fortuneTells.inCup!.length == 0 ? 1 : widget.fortuneTells.inCup!.length,
             itemBuilder: (_, index) {
               if (widget.fortuneTells.inCup!.length == 0) {
                 return Icon(Icons.image);
@@ -196,8 +203,7 @@ class _FortuneDetailState extends State<FortuneDetail> {
                   onTap: () async {
                     showImage(context, widget.fortuneTells.inCup![index]);
                   },
-                  child: Image.memory(
-                      base64Decode(widget.fortuneTells.inCup![index]),
+                  child: Image.memory(base64Decode(widget.fortuneTells.inCup![index]),
                       fit: BoxFit.cover),
                 );
               }
@@ -209,8 +215,7 @@ class _FortuneDetailState extends State<FortuneDetail> {
         ),
         Text(
           "Tabak İçi ",
-          style:
-              TextStyle(color: Themes.mainColor, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Themes.mainColor, fontWeight: FontWeight.bold),
         ),
         const SizedBox(
           height: 5,
@@ -220,8 +225,7 @@ class _FortuneDetailState extends State<FortuneDetail> {
           width: MediaQuery.of(context).size.height * .25,
           child: InkWell(
             onTap: () => showImage(context, widget.fortuneTells.flatCup!.first),
-            child: Image.memory(
-                base64Decode(widget.fortuneTells.flatCup!.first),
+            child: Image.memory(base64Decode(widget.fortuneTells.flatCup!.first),
                 fit: BoxFit.cover),
           ),
         ),
@@ -251,17 +255,13 @@ class _FortuneDetailState extends State<FortuneDetail> {
                         ? "Henüz Bir Soru Yok"
                         : widget.fortuneTells.fortune_quest!["quest"]),
                 controller: soruController,
-                formHint: widget.fortuneTells.fortune_quest!["answer"]
-                            .toString() ==
-                        "null"
+                formHint: widget.fortuneTells.fortune_quest!["answer"].toString() == "null"
                     ? "Cevap Gir"
                     : widget.fortuneTells.fortune_quest!["answer"].toString(),
                 keyboardType: TextInputType.multiline,
-                readOnly:
-                    widget.fortuneTells.fortune_quest!["quest"].toString() ==
-                            "null"
-                        ? true
-                        : false,
+                readOnly: widget.fortuneTells.fortune_quest!["quest"].toString() == "null"
+                    ? true
+                    : false,
                 maxLines: 10,
               )
             : Padding(

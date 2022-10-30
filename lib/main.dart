@@ -11,10 +11,13 @@ import 'Screens/dashboard/presentation/manager/fortune_bloc.dart';
 import 'Screens/dashboard/presentation/pages/fortune_tells_page.dart';
 import 'Screens/users/presentation/manager/user_bloc.dart';
 import 'Screens/users/presentation/pages/users_page.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await init();
   runApp(MyApp());
 }
